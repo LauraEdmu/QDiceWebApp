@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Dice Roller</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Quantum Dice Roller</h1>
+        <form id="diceForm">
+            <label for="expression">Dice Expression (e.g., 1d6, 2d10+5):</label>
+            <input type="text" id="expression" name="expression" value="1d6">
+            <br>
+            <button type="submit">Roll Dice</button>
+        </form>
+        <button id="fetchRandomness">Fetch New Randomness</button>
+        <div id="result"></div>
+        <div id="randomness">Randomness left: {{ randomness }}</div>
+    </div>
+    <script>
+        document.getElementById('diceForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const expression = document.getElementById('expression').value;
+
+            console.log('Rolling dice with expression:', expression);
+            
+            fetch('/roll', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ expression: expression })
+            })
+            .then(response => {
+                console.log('Response received:', response);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data:', data);
+                const resultDiv = document.getElementById('result');
+                if (typeof data.rolls === 'string') {
+                    resultDiv.innerHTML = '<h2>Roll Results:</h2><p>' + data.rolls + '</p>';
+                } else if (Array.isArray(data.rolls)) {
+                    resultDiv.innerHTML = '<h2>Roll Results:</h2><p>' + data.rolls.join(', ') + '</p>';
+                } else {
+                    resultDiv.innerHTML = '<h2>Error:</h2><p>Unexpected roll result format.</p>';
+                }
+                const randomnessDiv = document.getElementById('randomness');
+                randomnessDiv.innerHTML = 'Randomness left: ' + data.randomness;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        document.getElementById('fetchRandomness').addEventListener('click', function() {
+            console.log('Fetching new randomness');
+
+            fetch('/fetch_randomness', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Response received:', response);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data:', data);
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '<h2>' + data.status + '</h2>';
+                const randomnessDiv = document.getElementById('randomness');
+                randomnessDiv.innerHTML = 'Randomness left: ' + data.randomness;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
